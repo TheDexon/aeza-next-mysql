@@ -7,43 +7,75 @@ export default function ContactForm() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
 
-    setLoading(true);
-    setSuccess(false);
+  console.clear();
+  console.log("=== НАЧАЛО ОТПРАВКИ ===");
+
+  setLoading(true);
+  setSuccess(false);
+  setError("");
+
+  const formData = new FormData(e.currentTarget);
+
+  const data = {
+    name: formData.get("name"),
+    email: formData.get("email"),
+    phone: formData.get("phone"),
+    message: formData.get("message"),
+  };
+
+  console.log("Данные формы:", data);
+
+  try {
+    console.log("Отправляем fetch...");
+
+    const response = await fetch("/api/contact", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    console.log("HTTP Status:", response.status);
+    console.log("Response OK:", response.ok);
+
+    const result = await response.json();
+
+    console.log("Ответ сервера:", result);
+
+    if (!response.ok) {
+      console.error("Сервер вернул ошибку");
+      throw new Error(result.message ?? "Ошибка отправки");
+    }
+
+    console.log("Устанавливаем success");
+
+    setSuccess(true);
     setError("");
 
-    const formData = new FormData(e.currentTarget);
+    e.currentTarget.reset();
 
-    const data = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-      phone: formData.get("phone"),
-      message: formData.get("message"),
-    };
+    console.log("Форма очищена");
+  } catch (err) {
+    console.error("ПОПАЛИ В CATCH");
+    console.error(err);
 
-    try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+    setSuccess(false);
 
-      if (!response.ok) {
-        throw new Error("Ошибка отправки");
-      }
-
-      setSuccess(true);
-      e.currentTarget.reset();
-    } catch {
-      setError("Не удалось отправить заявку. Попробуйте позже.");
-    } finally {
-      setLoading(false);
-    }
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Не удалось отправить заявку. Попробуйте позже."
+    );
+  } finally {
+    console.log("FINALLY");
+    setLoading(false);
+    console.log("=== КОНЕЦ ===");
   }
+}
 
   return (
     <section id="contact" className="bg-slate-900 py-24">
